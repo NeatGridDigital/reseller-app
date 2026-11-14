@@ -561,6 +561,7 @@ nav .badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--bad);co
   function save() { S.savedAt = new Date().toISOString(); store.set(KEY, S); }
 
   // ---------------------------------------------------------------- helpers
+  function pl(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -723,7 +724,7 @@ nav .badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--bad);co
     var D = R.dash, h = installNote() + picker();
     if (R.health) h += '<div class="health">' + R.health + (R.health === 1 ? " thing" : " things") + ' to check. <button class="linkb" data-a="itf" data-v="check">See them</button></div>';
     var nearL = R.limits.filter(function (l) { return l.status !== "OK"; });
-    if (nearL.length) h += '<div class="limnote">' + esc(nearL.map(function (l) { return l.name + ": " + l.cnt + (R.U.rule === "either" || R.U.lsales <= 60 ? " of " + R.U.lsales : "") + " sales, " + l.status.toLowerCase(); }).join(". ")) +
+    if (nearL.length) h += '<div class="limnote">' + esc(nearL.map(function (l) { return l.name + ": " + (R.U.rule === "either" || R.U.lsales <= 60 ? l.cnt + " of " + R.U.lsales + " sales" : pl(l.cnt, "sale")) + ", " + l.status.toLowerCase(); }).join(". ")) +
       '. <button class="linkb" data-a="tab" data-v="limits" style="color:inherit">See the counter</button></div>';
     var keep = Math.max(0, D.keep), parts = [["sc", "Item costs", D.costs, "#A9C7BB"], ["sf", "Platform fees", D.fees, "#D9B3CB"], ["ss", "Shipping I paid", D.shipout, "#E9DCC6"], ["sx", "Running costs", D.running, "#8C9691"], ["sk", "You keep", keep, "#F7F4EF"]];
     var tot = Math.max(D.sales, parts.slice(0, 4).reduce(function (t, p) { return t + Math.max(0, p[2]); }, 0) + keep, 0.01);
@@ -924,7 +925,7 @@ nav .badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--bad);co
     var used = {}; S.items.forEach(function (x) { if (x.platform) used[x.platform] = (used[x.platform] || 0) + 1; });
     return '<p class="muted" style="margin-top:0">Fees fill in on each sale from here. Change a rate when a platform changes it; to keep an old fee on an old sale, type it on that item.</p>' +
       '<div class="btns" style="margin:0 0 12px"><button class="btn" data-a="platform">+ Platform</button></div><div class="card">' +
-      S.platforms.map(function (p) { return '<button class="row rowb" data-a="platform" data-id="' + esc(p.id) + '"><span>' + esc(p.name || "(no name)") + '<br><span class="meta">' + esc(feeLine(p)) + "</span></span><span class=\"meta\">" + (used[p.name] || 0) + " items</span></button>"; }).join("") + "</div>" +
+      S.platforms.map(function (p) { return '<button class="row rowb" data-a="platform" data-id="' + esc(p.id) + '"><span>' + esc(p.name || "(no name)") + '<br><span class="meta">' + esc(feeLine(p)) + "</span></span><span class=\"meta\">" + pl(used[p.name] || 0, "item") + "</span></button>"; }).join("") + "</div>" +
       '<p class="hint">Preset rates checked Oct 29, 2026 from fee guides. Each platform can change its fees: check its own fee page now and then.</p>';
   }
   function platformSheet(id) {
@@ -1060,11 +1061,11 @@ nav .badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--bad);co
     else if (a === "del-exp") { if (confirm("Delete this running cost?")) { drop("expenses", id); save(); closeSheet(); view.keep = true; render(); toast("Deleted"); } }
     else if (a === "platform") platformSheet(id || null);
     else if (a === "del-platform") { var p = byId("platforms", id), n = S.items.filter(function (x) { return x.platform === p.name; }).length;
-      if (confirm(n ? p.name + " is on " + n + " items. Delete it anyway? Its sales will show as to check." : "Delete " + p.name + "?")) { drop("platforms", id); save(); closeSheet(); view.keep = true; render(); } }
+      if (confirm(n ? p.name + " is on " + pl(n, "item") + ". Delete it anyway? Its sales will show as to check." : "Delete " + p.name + "?")) { drop("platforms", id); save(); closeSheet(); view.keep = true; render(); } }
     else if (a === "del-pay") { if (confirm("Delete this record?")) { drop("payments", id); save(); view.keep = true; render(); } }
     else if (a === "more") { view.tab = "more"; view.more = v; view.shown = 40; view.anim = true; closeSheet(); render(); window.scrollTo(0, 0); }
     else if (a === "show-more") { view.shown += 40; view.keep = true; render(); }
-    else if (a === "copy") { var txt = tsv(v); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast("Copied " + S[v].length + " rows"); },
+    else if (a === "copy") { var txt = tsv(v); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast("Copied " + pl(S[v].length, "row") + ""); },
       function () { download(v + ".tsv", txt, "text/tab-separated-values"); }); }
     else if (a === "csv") download("reseller-" + v + ".csv", csv(v), "text/csv");
     else if (a === "install") {
